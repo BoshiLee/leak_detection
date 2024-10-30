@@ -1,3 +1,4 @@
+import argparse
 import os
 
 from tensorflow.keras.models import load_model
@@ -21,16 +22,20 @@ def predict_leak(model_path, file_path, desired_time=2.0):
 
 
 if __name__ == "__main__":
-    model_path = 'model_202410301113.h5'  # 模型檔案路徑
+    parser = argparse.ArgumentParser(description='Predict if there is a leak in the audio file.')
+    parser.add_argument('model_path', type=str, help='Path to the trained model file.')
+    parser.add_argument('--dir', type=str, help='Path to the audio file to predict.')
+    args = parser.parse_args()
+    model_path = args.model_path
 
-    test_audio_dir = 'test_data/2024-10-28'
+    test_audio_dir = args.dir
 
     result_dict: dict[int, list[str]] = {0: [], 1: []}
 
 
     for file in os.listdir(test_audio_dir):
         file_path = os.path.join(test_audio_dir, file)
-        label, confidence = predict_leak(model_path, file_path)
+        label, confidence = predict_leak(model_path, file_path, desired_time=1.0)
         if label == 1:
             result_dict[1].append(f"偵測到漏水，信心度: {confidence:.2f} ({file})")
         else:

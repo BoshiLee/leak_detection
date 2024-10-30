@@ -4,21 +4,39 @@ from tensorflow.keras.models import load_model
 
 
 def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_time=2.0):
-    # 計算 max_len 以符合 desired_time
+    """
+    提取 Mel 頻譜圖特徵，並根據目標時間長度進行填充或截斷，
+    確保時間幀數是 2 的冪次倍數。
+
+    Args:
+        audio (np.ndarray): 音訊資料。
+        sr (int): 取樣率。
+        n_mels (int): Mel 頻帶數。
+        n_fft (int): FFT 大小。
+        hop_length (int): hop length。
+        desired_time (float): 目標時間長度（秒）。
+
+    Returns:
+        np.ndarray: 處理後的 Mel 頻譜圖，形狀為 (target_len, n_mels)。
+    """
     max_len = int(np.ceil((desired_time * sr) / hop_length))
+    # 計算下個 2 的冪次倍數
+    target_len = int(np.ceil(max_len / 8) * 8)
 
-    mel_spectrogram = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length)
+    mel_spectrogram = librosa.feature.melspectrogram(
+        y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length
+    )
     log_mel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
-
-    # 轉置以符合 (時間, 頻率) 的形狀
     log_mel_spectrogram = log_mel_spectrogram.T  # 形狀變為 (時間, n_mels)
 
-    # 填充或截斷至 max_len
-    if log_mel_spectrogram.shape[0] < max_len:
-        pad_width = max_len - log_mel_spectrogram.shape[0]
-        log_mel_spectrogram = np.pad(log_mel_spectrogram, ((0, pad_width), (0, 0)), mode='constant')
+    # 填充或截斷至 target_len
+    if log_mel_spectrogram.shape[0] < target_len:
+        pad_width = target_len - log_mel_spectrogram.shape[0]
+        log_mel_spectrogram = np.pad(
+            log_mel_spectrogram, ((0, pad_width), (0, 0)), mode='constant'
+        )
     else:
-        log_mel_spectrogram = log_mel_spectrogram[:max_len, :]
+        log_mel_spectrogram = log_mel_spectrogram[:target_len, :]
 
     return log_mel_spectrogram
 
