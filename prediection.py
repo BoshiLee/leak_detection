@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     for file in os.listdir(test_audio_dir):
         file_path = os.path.join(test_audio_dir, file)
-        label, confidence = predict_leak(model_path, file_path, desired_time=1.0)
+        label, confidence = predict_leak(model_path, file_path, desired_time=2.0)
         if label == 1:
             result_dict[1].append(f"偵測到漏水，信心度: {confidence:.2f} ({file})")
         else:
