@@ -7,3 +7,4 @@ scikit-learn
 notebook
 python-dotenv
 tqdm
+tensorflow<2.11
