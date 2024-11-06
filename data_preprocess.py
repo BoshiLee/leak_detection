@@ -2,6 +2,7 @@ import librosa
 import numpy as np
 from tensorflow.keras.models import load_model
 
+
 def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.0):
 
     max_len = int(np.ceil((desired_time * sr) / hop_length))
@@ -13,6 +14,7 @@ def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.
     D = librosa.stft(audio, n_fft=n_fft, hop_length=hop_length)
     # 計算幅度譜
     S_db = librosa.amplitude_to_db(np.abs(D), ref=np.max)
+    S_db = S_db.T  # 形狀變為 (時間, 頻率)
 
     # 填充或截斷至 target_len
     if S_db.shape[0] < target_len:
@@ -22,6 +24,7 @@ def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.
         S_db = S_db[:target_len, :]
 
     return S_db
+
 
 def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_time=2.0):
     """
@@ -47,7 +50,7 @@ def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_
         y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length
     )
     log_mel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
-    # log_mel_spectrogram = log_mel_spectrogram.T  # 形狀變為 (時間, n_mels)
+    log_mel_spectrogram = log_mel_spectrogram.T  # 形狀變為 (時間, n_mels)
 
     # 填充或截斷至 target_len
     if log_mel_spectrogram.shape[0] < target_len:
