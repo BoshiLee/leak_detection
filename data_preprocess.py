@@ -11,7 +11,7 @@ def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.
 
 
     # 計算 STFT
-    D = librosa.stft(audio, n_fft=n_fft, hop_length=hop_length)
+    D = librosa.stft(audio, n_fft=n_fft, hop_length=hop_length, window='hamming')
     # 計算幅度譜
     S_db = librosa.amplitude_to_db(np.abs(D), ref=np.max)
     S_db = S_db.T  # 形狀變為 (時間, 頻率)
@@ -26,7 +26,7 @@ def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.
     return S_db
 
 
-def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_time=2.0):
+def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_time=2.0, transform=True):
     """
     提取 Mel 頻譜圖特徵，並根據目標時間長度進行填充或截斷，
     確保時間幀數是 2 的冪次倍數。
@@ -47,7 +47,7 @@ def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_
     target_len = int(np.ceil(max_len / 8) * 8)
 
     mel_spectrogram = librosa.feature.melspectrogram(
-        y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length
+        y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, window='hamming'
     )
     log_mel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
     log_mel_spectrogram = log_mel_spectrogram.T  # 形狀變為 (時間, n_mels)
