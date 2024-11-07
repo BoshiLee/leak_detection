@@ -4,6 +4,8 @@ from datetime import datetime
 from xml.sax.handler import feature_external_ges
 
 from tensorflow.keras.models import load_model
+from tqdm import tqdm
+
 from data_preprocess import preprocess_audio, preprocess_stft_audio
 
 
@@ -18,7 +20,7 @@ def predict_leak(model_path, file_path, desired_time=2.0):
     prediction = model.predict(feature)
 
     # 解析預測結果
-    label = 1 if prediction[0][0] >= 0.95 else 0
+    label = 1 if prediction[0][0] >= 0.60 else 0
     confidence = prediction[0][0]
 
     return label, confidence
@@ -33,6 +35,9 @@ if __name__ == "__main__":
     model_name = os.path.basename(args.model_path).split('.')[0]
     print(f'use model: {model_name}')
 
+    audio_dir = os.path.abspath(args.dir)
+    print(f'audio_dir: {audio_dir}')
+
     model_path = os.path.abspath(args.model_path)
     test_audio_dir = os.path.abspath(args.dir)
 
@@ -43,8 +48,11 @@ if __name__ == "__main__":
         print(f"目錄 {test_audio_dir} 不存在，請檢查路徑是否正確。")
     else:
         # 讀取資料夾內的每個檔案
-        for file in os.listdir(test_audio_dir):
+        for file in tqdm(os.listdir(test_audio_dir)):
             file_path = os.path.join(test_audio_dir, file)
+            if not file.endswith(('.wav', '.WAV')):
+                print(f"檔案 {file_path} 不是 .wav 或 .WAV 檔案，已跳過該檔案。")
+                continue
             try:
                 # 呼叫預測函數
                 label, confidence = predict_leak(model_path, file_path, desired_time=2.0)
@@ -61,7 +69,7 @@ if __name__ == "__main__":
     print(f'共有 {len(result_dict[1])} 個檔案偵測到漏水，{len(result_dict[0])} 個檔案未偵測到漏水。')
     # 寫到 prediction_log_{date).txt
     date = datetime.now().strftime('%Y%m%d%H%M')
-    with open(f'{model_name}_prediction_log.txt', 'w') as f:
+    with open(f'{audio_dir}\\{model_name}_prediction_log_{date}.txt', 'w', encoding='utf-8') as f:
         for label, results in result_dict.items():
             f.write(f"類別 {label}:\n")
             print(f"類別 {label}:")
