@@ -1,5 +1,7 @@
 import librosa
 import numpy as np
+from jupyter_server.utils import fetch
+from pyexpat import features
 from tensorflow.keras.models import load_model
 
 
@@ -70,6 +72,22 @@ def preprocess_audio(file_path, desired_time=2.0, n_mels=128, n_fft=2048, hop_le
 
     # 預處理音訊
     feature = extract_features(audio, sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, desired_time=desired_time)
+
+    # 正規化特徵
+    feature = (feature - np.mean(feature)) / np.std(feature)
+
+    # 擴展維度以符合模型輸入 (1, max_len, n_mels, 1)
+    feature = np.expand_dims(feature, axis=0)  # 批次維度
+    feature = np.expand_dims(feature, axis=-1)  # 通道維度
+
+    return feature
+
+def preprocess_stft_audio(file_path, desired_time=2.0, n_mels=128, n_fft=2048, hop_length=512):
+    # 載入音訊檔案
+    audio, sr = librosa.load(file_path, sr=None)
+
+    # 預處理音訊
+    feature = extract_stft_features(audio, sr, n_fft=1024, hop_length=hop_length, desired_time=desired_time)
 
     # 正規化特徵
     feature = (feature - np.mean(feature)) / np.std(feature)
