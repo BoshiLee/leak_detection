@@ -8,14 +8,15 @@ from tqdm import tqdm
 
 from data_preprocess import preprocess_audio, preprocess_stft_audio
 
+def process_audio(file_path, sr=48000, desired_time=2.0):
+    # 預處理音訊
+    feature = preprocess_audio(file_path, traget_sr=sr, desired_time=desired_time)
+    # feature = preprocess_stft_audio(file_path, desired_time=desired_time)
+    return feature
 
-def predict_leak(model_path, file_path, desired_time=2.0):
+def predict_leak(model_path, feature):
     # 載入模型
     model = load_model(model_path)
-
-    # 預處理音訊
-    feature = preprocess_audio(file_path, desired_time=desired_time)
-    # feature = preprocess_stft_audio(file_path, desired_time=desired_time)
     # 預測
     prediction = model.predict(feature)
 
@@ -48,14 +49,15 @@ if __name__ == "__main__":
         print(f"目錄 {test_audio_dir} 不存在，請檢查路徑是否正確。")
     else:
         # 讀取資料夾內的每個檔案
-        for file in tqdm(os.listdir(test_audio_dir)):
+        for file in os.listdir(test_audio_dir):
             file_path = os.path.join(test_audio_dir, file)
             if not file.endswith(('.wav', '.WAV')):
                 print(f"檔案 {file_path} 不是 .wav 或 .WAV 檔案，已跳過該檔案。")
                 continue
             try:
+                feature = process_audio(file_path)
                 # 呼叫預測函數
-                label, confidence = predict_leak(model_path, file_path, desired_time=2.0)
+                label, confidence = predict_leak(model_path, file_path)
                 if label == 1:
                     result_dict[1].append(f"偵測到漏水，信心度: {confidence:.2f} ({file})")
                 else:

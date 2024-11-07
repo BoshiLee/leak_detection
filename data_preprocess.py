@@ -66,9 +66,14 @@ def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_
     return log_mel_spectrogram
 
 
-def preprocess_audio(file_path, desired_time=2.0, n_mels=128, n_fft=2048, hop_length=512):
+def preprocess_audio(file_path, traget_sr=48000, desired_time=2.0, n_mels=128, n_fft=2048, hop_length=512):
     # 載入音訊檔案
     audio, sr = librosa.load(file_path, sr=None)
+
+    if sr != traget_sr:
+        print(f'Resampling audio... from {sr} to {traget_sr}')
+        audio = librosa.resample(audio, sr, traget_sr)
+        sr = traget_sr
 
     # 預處理音訊
     feature = extract_features(audio, sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, desired_time=desired_time)
