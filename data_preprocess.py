@@ -28,7 +28,7 @@ def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.
     return S_db
 
 
-def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_time=2.0, transform=True):
+def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_time=2.0):
     """
     提取 Mel 頻譜圖特徵，並根據目標時間長度進行填充或截斷，
     確保時間幀數是 2 的冪次倍數。
@@ -72,11 +72,10 @@ def preprocess_audio(file_path, traget_sr=48000, desired_time=2.0, n_mels=128, n
 
     if sr != traget_sr:
         print(f'Resampling audio... from {sr} to {traget_sr}')
-        audio = librosa.resample(audio, sr, traget_sr)
-        sr = traget_sr
+        audio = librosa.resample(audio, orig_sr=sr, target_sr=traget_sr)
 
     # 預處理音訊
-    feature = extract_features(audio, sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, desired_time=desired_time)
+    feature = extract_features(audio, traget_sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, desired_time=desired_time)
 
     # 正規化特徵
     feature = (feature - np.mean(feature)) / np.std(feature)

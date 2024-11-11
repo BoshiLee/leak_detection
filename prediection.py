@@ -8,9 +8,9 @@ from tqdm import tqdm
 
 from data_preprocess import preprocess_audio, preprocess_stft_audio
 
-def process_audio(file_path, sr=48000, desired_time=2.0):
+def process_audio(file_path, sr=4800, n_mels=40, n_fft=512, hop_length=64, desired_time=2.0):
     # 預處理音訊
-    feature = preprocess_audio(file_path, traget_sr=sr, desired_time=desired_time)
+    feature = preprocess_audio(file_path, traget_sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, desired_time=desired_time)
     # feature = preprocess_stft_audio(file_path, desired_time=desired_time)
     return feature
 
@@ -21,7 +21,7 @@ def predict_leak(model_path, feature):
     prediction = model.predict(feature)
 
     # 解析預測結果
-    label = 1 if prediction[0][0] >= 0.60 else 0
+    label = 1 if prediction[0][0] >= 0.70 else 0
     confidence = prediction[0][0]
 
     return label, confidence
@@ -55,9 +55,9 @@ if __name__ == "__main__":
                 print(f"檔案 {file_path} 不是 .wav 或 .WAV 檔案，已跳過該檔案。")
                 continue
             try:
-                feature = process_audio(file_path)
+                feature = process_audio(file_path, sr=4800, desired_time=2.0, n_mels=80, n_fft=2048, hop_length=128)
                 # 呼叫預測函數
-                label, confidence = predict_leak(model_path, file_path)
+                label, confidence = predict_leak(model_path, feature)
                 if label == 1:
                     result_dict[1].append(f"偵測到漏水，信心度: {confidence:.2f} ({file})")
                 else:
