@@ -7,4 +7,6 @@ scikit-learn
 notebook
 python-dotenv
 tqdm
+pandas
+paramiko
 tensorflow<2.11

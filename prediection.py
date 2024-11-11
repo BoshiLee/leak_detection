@@ -21,7 +21,7 @@ def predict_leak(model_path, feature):
     prediction = model.predict(feature)
 
     # 解析預測結果
-    label = 1 if prediction[0][0] >= 0.70 else 0
+    label = 1 if prediction[0][0] >= 0.60 else 0
     confidence = prediction[0][0]
 
     return label, confidence
@@ -55,7 +55,7 @@ if __name__ == "__main__":
                 print(f"檔案 {file_path} 不是 .wav 或 .WAV 檔案，已跳過該檔案。")
                 continue
             try:
-                feature = process_audio(file_path, sr=4800, desired_time=2.0, n_mels=80, n_fft=2048, hop_length=128)
+                feature = process_audio(file_path, sr=4800, desired_time=2.0, n_mels=120, n_fft=2048, hop_length=64)
                 # 呼叫預測函數
                 label, confidence = predict_leak(model_path, feature)
                 if label == 1:

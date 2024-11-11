@@ -3,6 +3,7 @@ import numpy as np
 from jupyter_server.utils import fetch
 from pyexpat import features
 from tensorflow.keras.models import load_model
+from scipy.signal import butter, lfilter
 
 
 def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.0):
@@ -28,7 +29,7 @@ def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.
     return S_db
 
 
-def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_time=2.0):
+def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, enhanced=1.5, desired_time=2.0):
     """
     提取 Mel 頻譜圖特徵，並根據目標時間長度進行填充或截斷，
     確保時間幀數是 2 的冪次倍數。
@@ -49,9 +50,10 @@ def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_
     target_len = int(np.ceil(max_len / 8) * 8)
 
     mel_spectrogram = librosa.feature.melspectrogram(
-        y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, window='hamming'
+        y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, window='hamming', fmin=10, fmax=1500
     )
-    log_mel_spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
+    mel_enhanced = mel_spectrogram * enhanced
+    log_mel_spectrogram = librosa.power_to_db(mel_enhanced, ref=np.max)
     log_mel_spectrogram = log_mel_spectrogram.T  # 形狀變為 (時間, n_mels)
 
     # 填充或截斷至 target_len
@@ -65,6 +67,13 @@ def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, desired_
 
     return log_mel_spectrogram
 
+def butter_bandpass(lowcut, highcut, fs, order=5):
+    return butter(order, [lowcut, highcut], fs=fs, btype='band')
+
+def bandpass_filter(data, sr, lowcut, highcut, order=6):
+    b, a = butter_bandpass(lowcut, highcut, sr, order=order)
+    y = lfilter(b, a, data)
+    return y
 
 def preprocess_audio(file_path, traget_sr=48000, desired_time=2.0, n_mels=128, n_fft=2048, hop_length=512):
     # 載入音訊檔案
@@ -74,8 +83,10 @@ def preprocess_audio(file_path, traget_sr=48000, desired_time=2.0, n_mels=128, n
         print(f'Resampling audio... from {sr} to {traget_sr}')
         audio = librosa.resample(audio, orig_sr=sr, target_sr=traget_sr)
 
+    filtered_audio = bandpass_filter(audio, sr=traget_sr, lowcut=10, highcut=1500)
+
     # 預處理音訊
-    feature = extract_features(audio, traget_sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, desired_time=desired_time)
+    feature = extract_features(filtered_audio, traget_sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, desired_time=desired_time)
 
     # 正規化特徵
     feature = (feature - np.mean(feature)) / np.std(feature)
