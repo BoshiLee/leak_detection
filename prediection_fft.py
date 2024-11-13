@@ -58,8 +58,6 @@ if __name__ == "__main__":
                                                desired_time=desired_time,
                                                n_fft=n_fft)
 
-                print(f"feature shape: {feature.shape}")
-
                 # 呼叫預測函數
                 label, confidence = predict_leak(model_path, feature)
                 if label == 1:
