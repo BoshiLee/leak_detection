@@ -1,12 +1,11 @@
 import argparse
 import os
 from datetime import datetime
-from xml.sax.handler import feature_external_ges
 
 from tensorflow.keras.models import load_model
-from tqdm import tqdm
 
-from data_preprocess import preprocess_audio, preprocess_stft_audio
+from data_preprocess import preprocess_stft_audio
+
 
 def process_audio(file_path, sr=4800, n_fft=512, hop_length=64, desired_time=2.0):
     # 預處理音訊

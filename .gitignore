@@ -163,6 +163,7 @@ cython_debug/
 
 dataset/
 training_data/
+images/
 
 *.txt
 *.png
