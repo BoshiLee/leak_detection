@@ -7,8 +7,9 @@ from dotenv import load_dotenv
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-from cnn_model import create_model, train_model, evaluate_model, plot_loss
+from cnn_model import create_model, train_model, evaluate_model
 from data_preprocess import extract_features, load_segmented_files, balance_shuffle_data
+from plotting import plot_training_history
 
 def preprocess_data(X, desired_time=2.0, n_mels=128, n_fft=2048, hop_length=512):
     features = []
@@ -93,9 +94,9 @@ if __name__ == '__main__':
     print("Creating model...")
     cnn_model = create_model(X_train)
     model, history = train_model(cnn_model, X_train, X_test, y_train, y_test, epochs=100, batch_size=64)
-    evaluate_model(cnn_model, X_test, y_test)
+    acc, loss = evaluate_model(model, X_test, y_test)
     date = datetime.now().strftime('%Y%m%d%H%M')
-    val_acc = history.history['val_accuracy'][-1]
-    model.save(f'models/model_mel_{date}_acc_{val_acc:.2f}.h5')
-    print(f"Model saved as models/model_mel_{date}_acc_{val_acc:.2f}.h5")
-    plot_loss(history)
+    model_name = f'model_mel_{date}_acc_{acc:.2f}_loss_{loss:.2f}'
+    model.save(f'models/{model_name}.h5')
+    print(f"Model saved as models/{model_name}.h5")
+    plot_training_history(history, model_name)

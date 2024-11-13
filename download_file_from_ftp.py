@@ -6,6 +6,8 @@ from pathlib import Path
 import paramiko
 from paramiko import SSHException
 from dotenv import load_dotenv
+from tqdm import tqdm
+
 load_dotenv()
 
 SFTP_HOST = os.getenv('SFTP_HOST')
@@ -41,7 +43,7 @@ def download_wav_files(csv_path):
         sftp = paramiko.SFTPClient.from_transport(transport)
         print("SFTP 連線成功")
 
-        for index, row in df.iterrows():
+        for index, row in tqdm(df.iterrows(), total=len(df)):
             try:
                 serial_number = row['serial_number']
                 date = row['date']  # 假設 date 格式為 'YYYY-MM-DD'
@@ -68,9 +70,9 @@ def download_wav_files(csv_path):
                 local_file_path = local_dir / f"{wav_file_name}.wav"
 
                 # 下載檔案
-                print(f"下載第 {index + 1} 行：{remote_path} 到 {local_file_path}")
+                tqdm.write(f"下載第 {index + 1} 行：{remote_path} 到 {local_file_path}")
                 sftp.get(remote_path, str(local_file_path))
-                print(f"下載成功：{local_file_path}")
+                tqdm.write(f"第 {index + 1} 行下載完成")
 
             except Exception as e:
                 print(f"第 {index + 1} 行下載失敗：{e}")
@@ -83,9 +85,13 @@ def download_wav_files(csv_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Download wav files from SFTP server.')
-    parser.add_argument('csv_path', type=str, help='Path to the CSV file containing the file information.')
+    parser.add_argument('csv_dir', type=str, help='Path to the CSV file containing the file information.')
 
     args = parser.parse_args()
-    csv_path = os.path.abspath(args.csv_path)
+    csv_dir = os.path.abspath(args.csv_dir)
 
-    download_wav_files(csv_path=csv_path)
+    for csv_file in os.listdir(csv_dir):
+        if csv_file.endswith('.csv'):
+            csv_path = os.path.join(csv_dir, csv_file)
+            download_wav_files(csv_path)
+            print(f"下載 {csv_file} 完成")

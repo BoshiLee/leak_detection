@@ -15,7 +15,7 @@ def format_files(root_dir, leak_dir, no_leak_dir):
                 if os.path.isdir(folder_path) and folder.isdigit():  # 確認是資料夾且資料夾名稱是數字
                     # 將資料夾名稱轉為整數
                     folder_num = int(folder)
-                    if folder_num < 30 or folder_num > 80 or folder_num == 50:  # 過濾 < 30, > 80, = 50 的資料夾 ，只處理 30 ~ 80 的資料夾
+                    if folder_num < 10 or folder_num > 80 or folder_num == 50:  # 過濾 < 30, > 80, = 50 的資料夾 ，只處理 30 ~ 80 的資料夾
                         continue
                     # 遍歷該資料夾內的子資料夾
                     for subfolder in tqdm(os.listdir(folder_path), desc=f'處理 {area_path}-{folder}'):

@@ -42,6 +42,43 @@ def compute_fft(data, sample_rate, n_fft=2048, desired_time=2.0):
     return frequencies, fft_magnitude
 
 
+def compute_fft_features(X, sample_rate, n_fft=2048, desired_time=2.0):
+    """
+    對一組音頻數據樣本進行 FFT 並提取幅值特徵，適用於 1D CNN。
+
+    參數:
+        X: list of numpy arrays, 音頻數據樣本的列表
+        sample_rate: int, 音頻的採樣率
+        n_fft: int, FFT 計算的樣本數 (默認為 2048)
+        desired_time: float, 希望的音頻時長 (秒)
+
+    返回:
+        X_features: numpy array, CNN 所需的 1D 特徵陣列 (樣本數, 特徵長度, 1)
+    """
+    X_features = []
+    desired_samples = int(desired_time * sample_rate)
+
+    for data in X:
+        # 填充或截取數據到指定長度
+        if len(data) < desired_samples:
+            data = np.pad(data, (0, desired_samples - len(data)), mode='constant')
+        else:
+            data = data[:desired_samples]
+
+        # 計算 FFT 並提取幅值
+        fft_result = fft(data, n=n_fft)
+        fft_magnitude = np.abs(fft_result[:n_fft // 2])  # 取前半部分的幅值
+
+        # 將每個音頻樣本的幅值特徵加入到列表中
+        X_features.append(fft_magnitude)
+
+    # 將列表轉為 numpy 陣列，並擴展維度以符合 CNN 輸入形狀 (樣本數, 特徵長度, 1)
+    X_features = np.array(X_features)
+    X_features = np.expand_dims(X_features, -1)  # 新形狀: (樣本數, 特徵長度, 1)
+
+    return X_features
+
+
 def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.0, transpose=True):
 
     max_len = int(np.ceil((desired_time * sr) / hop_length))
