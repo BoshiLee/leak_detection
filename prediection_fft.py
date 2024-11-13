@@ -2,7 +2,8 @@ import argparse
 import os
 from datetime import datetime
 from tensorflow.keras.models import load_model
-from feature_extraction import preprocess_audio
+from feature_extraction import preprocess_audio, preprocess_fft_audio
+
 
 def predict_leak(model_path, feature):
     # 載入模型
@@ -23,9 +24,7 @@ if __name__ == "__main__":
     load_dotenv()
     sample_rate = int(os.getenv('SAMPLE_RATE'))
     desired_time = float(os.getenv('DESIRED_TIME'))
-    n_mels = int(os.getenv("N_MELS"))
-    mels_n_fft = int(os.getenv("MELS_N_FFT"))
-    mels_hop_length = int(os.getenv("MELS_HOP_LENGTH"))
+    n_fft = int(os.getenv('N_FFT'))
 
     parser = argparse.ArgumentParser(description='Predict if there is a leak in the audio file.')
     parser.add_argument('model_path', type=str, help='Path to the trained model file.')
@@ -54,9 +53,13 @@ if __name__ == "__main__":
                 print(f"檔案 {file_path} 不是 .wav 或 .WAV 檔案，已跳過該檔案。")
                 continue
             try:
-                feature = preprocess_audio(file_path, traget_sr=sample_rate,
-                                           desired_time=desired_time,
-                                           n_mels=n_mels, n_fft=mels_n_fft, hop_length=mels_hop_length)
+                feature = preprocess_fft_audio(file_path,
+                                               traget_sr=sample_rate,
+                                               desired_time=desired_time,
+                                               n_fft=n_fft)
+
+                print(f"feature shape: {feature.shape}")
+
                 # 呼叫預測函數
                 label, confidence = predict_leak(model_path, feature)
                 if label == 1:

@@ -69,7 +69,7 @@ if __name__ == '__main__':
     model, history = train_model(cnn_model, X_train, X_test, y_train, y_test, epochs=100, batch_size=512)
     acc, loss = evaluate_model(model, X_test, y_test)
     date = datetime.now().strftime('%Y%m%d%H%M')
-    model_name = f'model_mel_{date}_acc_{acc:.2f}_loss_{loss:.2f}'
+    model_name = f'model_fft_{date}_acc_{acc:.2f}_loss_{loss:.2f}'
     model.save(f'models/{model_name}.h5')
     print(f"Model saved as models/{model_name}.h5")
     plot_training_history(history, model_name)

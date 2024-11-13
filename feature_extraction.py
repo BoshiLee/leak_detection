@@ -177,6 +177,25 @@ def preprocess_audio(file_path, traget_sr=48000, desired_time=2.0, n_mels=128, n
 
     return feature
 
+def preprocess_fft_audio(file_path, traget_sr, desired_time=2.0, n_fft=2048):
+    # 載入音訊檔案
+    audio, sr = librosa.load(file_path, sr=None)
+
+    if sr != traget_sr:
+        print(f'Resampling audio... from {sr} to {traget_sr}')
+        audio = librosa.resample(audio, orig_sr=sr, target_sr=traget_sr)
+
+    # 預處理音訊
+    feature, _ = compute_fft(audio, traget_sr, n_fft=n_fft, desired_time=desired_time)
+
+    # 正規化特徵
+    feature = (feature - np.mean(feature)) / np.std(feature)
+
+    # 擴展維度以符合模型輸入
+    feature = np.expand_dims(feature, axis=0)  # 新形狀: (特徵長度, 1)
+
+    return feature
+
 def preprocess_stft_audio(file_path, traget_sr, desired_time=2.0, n_fft=2048, hop_length=512):
     # 載入音訊檔案
     audio, sr = librosa.load(file_path, sr=None)
