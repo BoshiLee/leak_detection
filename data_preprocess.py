@@ -3,11 +3,46 @@ import random
 import librosa
 import numpy as np
 import os
+
+from scipy.fft import fft
 from tqdm import tqdm
 from scipy.signal import butter, lfilter
 
 
-def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.0):
+def compute_fft(data, sample_rate, n_fft=2048, desired_time=2.0):
+    """
+    計算給定數據的 FFT，並返回指定時間長度的頻率和幅值。
+
+    參數:
+        data: numpy array, 音頻數據樣本
+        sample_rate: int, 音頻的採樣率
+        n_fft: int, FFT 計算的樣本數 (默認為 2048)
+        desired_time: float, 希望的音頻時長 (秒)
+
+    返回:
+        frequencies: numpy array, 頻率軸
+        fft_magnitude: numpy array, 截取或填充後的 FFT 幅值矩陣
+    """
+    # 計算目標長度
+    desired_samples = int(desired_time * sample_rate)
+
+    # 如果數據長度不足，則填充到目標長度
+    if len(data) < desired_samples:
+        data = np.pad(data, (0, desired_samples - len(data)), mode='constant')
+    else:
+        data = data[:desired_samples]
+
+    # 截取所需樣本長度進行 FFT
+    fft_result = fft(data, n=n_fft)  # 計算 FFT，設置 n 參數以控制 FFT 長度
+    fft_magnitude = np.abs(fft_result[:n_fft // 2])  # 僅保留前半部分
+
+    # 計算頻率軸
+    frequencies = np.fft.fftfreq(n_fft, 1 / sample_rate)[:n_fft // 2]
+
+    return frequencies, fft_magnitude
+
+
+def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.0, transpose=True):
 
     max_len = int(np.ceil((desired_time * sr) / hop_length))
     # 計算下個 2 的冪次倍數
@@ -18,7 +53,8 @@ def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.
     D = librosa.stft(audio, n_fft=n_fft, hop_length=hop_length, window='hamming')
     # 計算幅度譜
     S_db = librosa.amplitude_to_db(np.abs(D), ref=np.max)
-    S_db = S_db.T  # 形狀變為 (時間, 頻率)
+    if transpose:
+        S_db = S_db.T  # 形狀變為 (時間, 頻率)
 
     # 填充或截斷至 target_len
     if S_db.shape[0] < target_len:
@@ -30,7 +66,7 @@ def extract_stft_features(audio, sr, n_fft=2048, hop_length=512, desired_time=2.
     return S_db
 
 
-def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, enhanced=1.5, desired_time=2.0):
+def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, enhanced=1.5, desired_time=2.0, transpose=True):
     """
     提取 Mel 頻譜圖特徵，並根據目標時間長度進行填充或截斷，
     確保時間幀數是 2 的冪次倍數。
@@ -50,12 +86,20 @@ def extract_features(audio, sr, n_mels=128, n_fft=2048, hop_length=512, enhanced
     # 計算下個 2 的冪次倍數
     target_len = int(np.ceil(max_len / 8) * 8)
 
-    mel_spectrogram = librosa.feature.melspectrogram(
-        y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, window='hamming', fmin=10, fmax=1500
-    )
+    if transpose:
+        mel_spectrogram = librosa.feature.melspectrogram(
+            y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, window='hamming', fmin=10, fmax=1500
+        )
+    else:
+        mel_spectrogram = librosa.feature.melspectrogram(
+            y=audio, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, window='hamming'
+        )
+
+
     mel_enhanced = mel_spectrogram * enhanced
     log_mel_spectrogram = librosa.power_to_db(mel_enhanced, ref=np.max)
-    log_mel_spectrogram = log_mel_spectrogram.T  # 形狀變為 (時間, n_mels)
+    if transpose:
+        log_mel_spectrogram = log_mel_spectrogram.T
 
     # 填充或截斷至 target_len
     if log_mel_spectrogram.shape[0] < target_len:
@@ -149,3 +193,5 @@ def balance_shuffle_data(wav_files, leak_wav_files):
 
     print(f"均衡後的樣本數: {min_count}")
     return wav_files, leak_wav_files
+
+

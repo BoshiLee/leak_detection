@@ -29,9 +29,9 @@ if __name__ == "__main__":
     load_dotenv()
     sample_rate = int(os.getenv('SAMPLE_RATE'))
     desired_time = float(os.getenv('DESIRED_TIME'))
-    n_mels = int(os.getenv('N_MELS'))
-    n_fft = int(os.getenv('N_FFT'))
-    hop_length = int(os.getenv('HOP_LENGTH'))
+    n_mels = int(os.getenv("N_MELS"))
+    mels_n_fft = int(os.getenv("MELS_N_FFT"))
+    mels_hop_length = int(os.getenv("MELS_HOP_LENGTH"))
 
     parser = argparse.ArgumentParser(description='Predict if there is a leak in the audio file.')
     parser.add_argument('model_path', type=str, help='Path to the trained model file.')
@@ -60,7 +60,7 @@ if __name__ == "__main__":
                 print(f"檔案 {file_path} 不是 .wav 或 .WAV 檔案，已跳過該檔案。")
                 continue
             try:
-                feature = process_audio(file_path, sr=sample_rate, desired_time=desired_time, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length)
+                feature = process_audio(file_path, sr=sample_rate, desired_time=desired_time, n_mels=n_mels, n_fft=mels_n_fft, hop_length=mels_hop_length)
                 # 呼叫預測函數
                 label, confidence = predict_leak(model_path, feature)
                 if label == 1:
