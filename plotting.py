@@ -3,12 +3,10 @@ import os
 import librosa.display
 import numpy as np
 import matplotlib.pyplot as plt
-import random
-from scipy.fft import fft
-
-from data_preprocess import extract_features, extract_stft_features, compute_fft
 
 from dotenv import load_dotenv
+
+from feature_extraction import extract_features, extract_stft_features, compute_fft
 
 load_dotenv()
 

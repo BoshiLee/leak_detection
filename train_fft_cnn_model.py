@@ -7,32 +7,31 @@ from dotenv import load_dotenv
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-from cnn_model import create_model, train_model, evaluate_model
+from cnn_model import create_model, train_model, evaluate_model, create_1d_cnn_model
 from create_dataset import create_dataset
-from feature_extraction import extract_features
+from feature_extraction import compute_fft
 from plotting import plot_training_history
 
-def preprocess_data(X, desired_time=2.0, n_mels=128, n_fft=2048, hop_length=512):
+def preprocess_data(X, desired_time=2.0, n_fft=2048):
     features = []
     for audio, sr in tqdm(X):
-        feature = extract_features(audio, sr, desired_time=desired_time, n_mels=n_mels,
-                                   n_fft=n_fft, hop_length=hop_length)
+        _, feature = compute_fft(audio, sr, desired_time=desired_time, n_fft=n_fft)
         features.append(feature)
     return np.array(features)
 
-def create_training_data(X, y, desired_time=2.0, n_mels=128, n_fft=2048, hop_length=512):
+def create_training_data(X, y, desired_time=2.0, n_fft=2048):
     print(f"總樣本數: {len(X)}")
     print(f"標籤分佈: {np.bincount(y)}")
 
-    X_features = preprocess_data(X, desired_time=desired_time, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length)
+    X_features = preprocess_data(X, desired_time=desired_time, n_fft=n_fft)
 
     print(f"特徵形狀: {X_features.shape}")  # 預期形狀: (樣本數, max_len, n_mels)
 
     # 正規化特徵
     X_features = (X_features - np.mean(X_features)) / np.std(X_features)
 
-    # 擴展維度以符合 CNN 輸入 (樣本數, 高, 寬, 通道)
-    X_features = np.expand_dims(X_features, -1)  # 新形狀: (樣本數, max_len, n_mels, 1)
+    # 擴展維度以符合 CNN 輸入 (樣本數, 長度, 1)
+    X_features = np.expand_dims(X_features, -1)
 
     # 分割訓練集與測試集
     X_train, X_test, y_train, y_test = train_test_split(X_features, y, test_size=0.2)
@@ -54,26 +53,20 @@ if __name__ == '__main__':
 
     load_dotenv()
     desired_time = float(os.getenv('DESIRED_TIME'))
-    n_mels = int(os.getenv("N_MELS"))
-    mels_n_fft = int(os.getenv("MELS_N_FFT"))
-    mels_hop_length = int(os.getenv("MELS_HOP_LENGTH"))
+    n_fft = int(os.getenv('N_FFT'))
 
     print(f"Desired time: {desired_time}")
-    print(f"Number of mel bands: {n_mels}")
-    print(f"Number of FFT points: {mels_n_fft}")
-    print(f"Hop length: {mels_hop_length}")
+    print(f"Number of FFT points: {n_fft}")
 
     print("Creating dataset...")
     X, y = create_dataset(dataset_path)
     X_train, X_test, y_train, y_test = create_training_data(X, y,
                                                             desired_time=desired_time,
-                                                            n_mels=n_mels,
-                                                            n_fft=mels_n_fft,
-                                                            hop_length=mels_hop_length)
+                                                            n_fft=n_fft,)
 
     print("Creating model...")
-    cnn_model = create_model(X_train)
-    model, history = train_model(cnn_model, X_train, X_test, y_train, y_test, epochs=100, batch_size=64)
+    cnn_model = create_1d_cnn_model(X_train.shape[1:])
+    model, history = train_model(cnn_model, X_train, X_test, y_train, y_test, epochs=100, batch_size=512)
     acc, loss = evaluate_model(model, X_test, y_test)
     date = datetime.now().strftime('%Y%m%d%H%M')
     model_name = f'model_mel_{date}_acc_{acc:.2f}_loss_{loss:.2f}'
