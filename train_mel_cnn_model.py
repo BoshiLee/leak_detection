@@ -73,22 +73,22 @@ if __name__ == '__main__':
 
     load_dotenv()
     desired_time = float(os.getenv('DESIRED_TIME'))
-    n_mels = int(os.getenv('N_MELS'))
-    n_fft = int(os.getenv('N_FFT'))
-    hop_length = int(os.getenv('HOP_LENGTH'))
+    n_mels = int(os.getenv("N_MELS"))
+    mels_n_fft = int(os.getenv("MELS_N_FFT"))
+    mels_hop_length = int(os.getenv("MELS_HOP_LENGTH"))
 
     print(f"Desired time: {desired_time}")
     print(f"Number of mel bands: {n_mels}")
-    print(f"Number of FFT points: {n_fft}")
-    print(f"Hop length: {hop_length}")
+    print(f"Number of FFT points: {mels_n_fft}")
+    print(f"Hop length: {mels_hop_length}")
 
     print("Creating dataset...")
     X, y = create_dataset(dataset_path)
     X_train, X_test, y_train, y_test = create_training_data(X, y,
                                                             desired_time=desired_time,
                                                             n_mels=n_mels,
-                                                            n_fft=n_fft,
-                                                            hop_length=hop_length)
+                                                            n_fft=mels_n_fft,
+                                                            hop_length=mels_hop_length)
 
     print("Creating model...")
     cnn_model = create_model(X_train)
