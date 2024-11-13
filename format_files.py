@@ -3,8 +3,8 @@ import os
 import shutil
 
 
-
 def format_files(root_dir, leak_dir, no_leak_dir):
+    count_dict: dict[str, int] = {}
     # 遍歷各個區處
     for area in os.listdir(root_dir):
         area_path = os.path.join(root_dir, area)
@@ -41,6 +41,9 @@ def format_files(root_dir, leak_dir, no_leak_dir):
 
                                     # 複製並重新命名檔案到相應的目標資料夾
                                     shutil.copy(file_path, new_file_path)
+                                    count_dict[target_dir] = count_dict.get(target_dir, 0) + 1
+
+    print('資料處理完成, 資料夾統計:' + f'泄漏: {count_dict[leak_dir]}, 無泄漏: {count_dict[no_leak_dir]} 個檔案')
 
 if __name__ == '__main__':
     # 定義根目錄
