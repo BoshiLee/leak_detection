@@ -75,7 +75,7 @@ def create_model(mockup_input):
     # 建立模型
     input_shape = (mockup_input.shape[1], mockup_input.shape[2], 1)
     print(f"模型輸入形狀: {input_shape}")
-    model = create_1d_cnn_model(input_shape)
+    model = create_2d_cnn_model(input_shape)
     model.summary()
     return model
 
