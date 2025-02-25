@@ -10,3 +10,5 @@ tqdm
 pandas
 paramiko
 tensorflow<2.11
+sqlalchemy
+pymysql
