@@ -10,7 +10,7 @@ load_dotenv()
 
 def export_query_results(
         db_url,
-        table_name,
+        table_name='map_location_web',
         serial_number=None,
         date_range=None,
         ai_result=None
@@ -29,7 +29,7 @@ def export_query_results(
     engine = create_engine(db_url)
 
     # 構建 SQL 查詢
-    query = f"SELECT serial_number, date, ai_result, wav_data FROM {table_name} WHERE 1=1"
+    query = f"SELECT serial_number, date, ai_result, dip, env, pvc, tfc, wav_data FROM {table_name} WHERE 1=1"
 
     if serial_number:
         query += f" AND serial_number = '{serial_number}'"
@@ -65,6 +65,7 @@ def export_query_results(
     # 匯出 CSV
     df.to_csv(output_file, index=False, encoding="utf-8-sig")
     print(f"資料已成功匯出至 {output_file}")
+    return output_file
 
 
 if __name__ == "__main__":
