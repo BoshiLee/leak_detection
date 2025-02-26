@@ -57,6 +57,7 @@ def download_wav_and_images(csv_path, sftp):
         print(f"SFTP 連線失敗：{ssh_e}")
 
 def read_line(row):
+    uid = row['id']
     serial_number = row['serial_number']
     date = row['date']  # 假設 date 格式為 'YYYY-MM-DD'
     wav_data = row['wav_data']
@@ -66,10 +67,8 @@ def read_line(row):
     env = row['env']
     pvc = row['pvc']
     tfc = row['tfc']
-    print('serial_number:', serial_number)
-    print('wav_data:', wav_data)
 
-    return serial_number, date, wav_data, ai_result, dip, env, pvc, tfc
+    return uid, serial_number, date, wav_data, ai_result, dip, env, pvc, tfc
 
 
 def download_file(sftp, row):
@@ -104,14 +103,12 @@ def download_file(sftp, row):
         local_image_3d_path = str(local_dir / f"{wav_file_name}_3d.png")
 
         # 下載檔案
-        tqdm.write(f"下載 {remote_wav_path} 至 {local_file_path}")
+        # tqdm.write(f"下載 {remote_wav_path} 至 {local_file_path}")
         sftp.get(remote_wav_path, local_file_path)
-        tqdm.write(f"下載 {remote_img_1d_path} 至 {local_image_1d_path}")
+        # tqdm.write(f"下載 {remote_img_1d_path} 至 {local_image_1d_path}")
         sftp.get(remote_img_1d_path, local_image_1d_path)
-        tqdm.write(f"下載 {remote_img_3d_path} 至 {local_image_3d_path}")
+        # tqdm.write(f"下載 {remote_img_3d_path} 至 {local_image_3d_path}")
         sftp.get(remote_img_3d_path, local_image_3d_path)
-
-
 
         return local_file_path, local_image_1d_path, local_image_3d_path
 

@@ -67,8 +67,8 @@ def plot_mel_stft_fft(wav, file_name, class_type='no-leak'):
     plt.close()
 
 
-def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type='no-leak', uid='12345', leak_rate=0,
-                            env_noise=0, dip_noise=0, pvc_pipe=0, tfc_noise=0):
+def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type='no-leak', uid='12345', serial_number="ITRI000000", leak_rate=0,
+                            env_noise=0, dip_noise=0, pvc_pipe=0, tfc_noise=0, dev=False):
     mel_spectrogram = extract_features(wav, sr=sample_rate, n_mels=n_mels, n_fft=mels_n_fft, hop_length=mels_hop_length,
                                        desired_time=desired_time, enhanced=1, transpose=False)
     S_db = extract_stft_features(wav, sr=sample_rate, n_fft=stft_n_fft, hop_length=stft_hop_length,
@@ -82,6 +82,7 @@ def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type
     axs[0, 0].axis('off')  # 隱藏座標軸
     table_data = [
         ["UID", uid],
+        ["序號", serial_number],
         ["擷取時間", file_name],
         ["洩漏率", f"{leak_rate}%"],
         ["環境音", f"{env_noise}%"],
@@ -150,7 +151,9 @@ def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type
     os.makedirs(f"images/{class_type}", exist_ok=True)
     plt.tight_layout()
     plt.savefig(f"images/{class_type}/{file_name}_mel_stft_fft_1d_3d.png")
-    plt.show()
+    if dev:
+        plt.show()
+
     plt.close()
 
 def plot_training_history(history, model_name):

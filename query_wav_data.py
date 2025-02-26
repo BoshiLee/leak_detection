@@ -9,7 +9,6 @@ load_dotenv()
 
 
 def export_query_results(
-        db_url,
         table_name='map_location_web',
         serial_number=None,
         date_range=None,
@@ -26,10 +25,13 @@ def export_query_results(
     ai_result (int or tuple, optional): 單一數值過濾條件，或區間範圍 (低值,高值)。
     """
     # 建立資料庫連線
+    db_url = os.getenv("DB_URL")
+    if not db_url:
+        raise ValueError("請在 .env 文件中設定 DB_URL")
     engine = create_engine(db_url)
 
     # 構建 SQL 查詢
-    query = f"SELECT serial_number, date, ai_result, dip, env, pvc, tfc, wav_data FROM {table_name} WHERE 1=1"
+    query = f"SELECT id, serial_number, date, ai_result, dip, env, pvc, tfc, wav_data FROM {table_name} WHERE 1=1"
 
     if serial_number:
         query += f" AND serial_number = '{serial_number}'"
@@ -77,10 +79,6 @@ if __name__ == "__main__":
                         help="篩選 ai_result，單一數值或區間 (格式: 數值 或 數值,數值)")
 
     args = parser.parse_args()
-
-    db_url = os.getenv("DB_URL")
-    if not db_url:
-        raise ValueError("請在 .env 文件中設定 DB_URL")
 
     date_range = args.date
     if date_range:
