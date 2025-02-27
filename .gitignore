@@ -168,3 +168,5 @@ images/
 *.txt
 *.png
 *.h5
+*.csv
+*.zip
