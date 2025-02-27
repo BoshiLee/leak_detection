@@ -148,9 +148,9 @@ def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type
     axs[1, 2].grid(True)
 
     # 確保目錄存在
-    os.makedirs(f"images/{class_type}", exist_ok=True)
+    os.makedirs(f"images/{serial_number}_{class_type}", exist_ok=True)
     plt.tight_layout()
-    plt.savefig(f"images/{class_type}/{file_name}_mel_stft_fft_1d_3d.png")
+    plt.savefig(f"images/{serial_number}_{class_type}/{file_name}_mel_stft_fft_1d_3d.png")
     if dev:
         plt.show()
 
