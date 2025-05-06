@@ -1,15 +1,15 @@
 import argparse
 import os
-
 import pandas as pd
 from pathlib import Path
 import paramiko
 from paramiko import SSHException
 from dotenv import load_dotenv
 from tqdm import tqdm
+from tkinter import filedialog, Tk
 
+# 讀取 .env 檔案中的環境變數
 load_dotenv()
-
 SFTP_HOST = os.getenv('SFTP_HOST')
 SFTP_PORT = int(os.getenv('SFTP_PORT'))
 SFTP_USERNAME = os.getenv('SFTP_USERNAME')
@@ -115,14 +115,15 @@ def download_file(sftp, row):
     except Exception as e:
         print(f"下載 {remote_wav_path} 失敗：{e}")
 
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Download wav files from SFTP server.')
-    parser.add_argument('csv_dir', type=str, help='Path to the CSV file containing the file information.')
-
-    args = parser.parse_args()
-    csv_dir = os.path.abspath(args.csv_dir)
+def main():
+    # GUI 選擇資料夾
+    root = Tk()
+    root.withdraw()
+    folder_path = filedialog.askdirectory(title='請選擇含 CSV 的資料夾')
+    if not folder_path:
+        print("❌ 未選擇資料夾，程式結束")
+        return
+    csv_dir = os.path.abspath(folder_path)
 
     for csv_file in os.listdir(csv_dir):
         if csv_file.endswith('.csv'):
@@ -133,3 +134,7 @@ if __name__ == "__main__":
                 download_wav_and_images(csv_path, sftp)
                 close_sftp(sftp)
             print(f"下載 {csv_file} 完成")
+    print("✅ 所有檔案處理完成，SFTP 連線已關閉")
+
+if __name__ == "__main__":
+    main()
