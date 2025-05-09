@@ -292,7 +292,7 @@ def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type
 
     # 儲存主圖（Mel + STFT + FFT + 表格 + 1D/3D）
     os.makedirs(f"images/{serial_number}_{class_type}", exist_ok=True)
-    main_fig_path = f"images/{serial_number}_{class_type}/{file_name}_mel_stft_fft_1d_3d.png"
+    main_fig_path = f"images/{serial_number}_{class_type}/uid_{uid}_{file_name}_mel_stft_fft_1d_3d.png"
     fig.tight_layout()
     fig.savefig(main_fig_path)  # ✅ 用 fig 儲存，而非 plt
     if dev:
