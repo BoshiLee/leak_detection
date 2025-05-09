@@ -1,11 +1,16 @@
 import os
+import tempfile
 
 import librosa.display
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 from dotenv import load_dotenv
-
+import matplotlib.image as mpimg
+import librosa
+import librosa.display
+from matplotlib import gridspec
+from scipy.fft import fft, ifft
+from scipy.io import wavfile
 from feature_extraction import extract_features, extract_stft_features, compute_fft
 
 load_dotenv()
@@ -26,6 +31,94 @@ print('mels_hop_length:', mels_hop_length)
 # Windows 用 'Microsoft JhengHei'，Mac 用 'PingFang TC'，Linux 可試 'Noto Sans CJK TC'
 plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei']  # 適用於 Windows
 plt.rcParams['axes.unicode_minus'] = False  # 避免負號變成方塊
+
+def generate_segments(sig, window=1.0):
+    """
+    根據輸入的音訊資料切成每段 window 秒的區段
+
+    Args:
+        sig (np.ndarray): 音訊資料（1D or 2D）
+        window (float): 每段長度（秒）
+
+    Returns:
+        list: [[start, end], ...] 的 segment_table
+    """
+    if sig.ndim > 1:
+        sig = sig.mean(axis=1)
+    duration = len(sig) / sample_rate
+
+    segments = []
+    start = 0.0
+    while start < duration:
+        end = min(start + window, duration)
+        segments.append([start, end])
+        start = end
+    return segments
+
+def FFT_filter(sig, segment_table, bandpass=None):
+    """
+    對給定的音訊資料進行 FFT 分析與 IFFT 還原，可加 bandpass 遮罩
+
+    Args:
+        sig (np.ndarray): 音訊訊號
+        segment_table (list): [[start, end], ...]（秒為單位）
+        bandpass (tuple or None): 頻率遮罩區間 (low_freq, high_freq)
+
+    Returns:
+        Xf_list, Yf_list, X_list, Y_list: 頻率、頻譜、還原時間序列等資訊
+    """
+    if sig.ndim > 1:
+        sig = sig.mean(axis=1)
+    time = len(sig) / sample_rate
+
+    Yf_list = []
+    Xf_list = []
+    X_list = []
+    Y_list = []
+
+    for start, end in segment_table:
+        if end > time:
+            print(f"⚠️ 區段 {start}-{end} 超出音檔長度 {time:.2f}s，已修正 end 為 {time:.2f}s")
+            end = time
+        if start >= end:
+            print(f"⚠️ 無效區段：start={start}, end={end}，已跳過")
+            continue
+
+        start_idx = int(start * sample_rate)
+        end_idx = int(end * sample_rate)
+        segment = sig[start_idx:end_idx]
+
+        N = len(segment)
+        Yf = fft(segment) / sample_rate
+        freqs = np.fft.fftfreq(N, d=1/sample_rate)
+
+        if bandpass is not None:
+            low, high = bandpass
+            mask = (np.abs(freqs) >= low) & (np.abs(freqs) <= high)
+            Yf_filtered = np.zeros_like(Yf, dtype=complex)
+            Yf_filtered[mask] = Yf[mask]
+        else:
+            Yf_filtered = Yf
+
+        freqs_pos = freqs[:N//2]
+        Yf_pos = np.abs(Yf[:N//2])
+        y_rec = ifft(Yf_filtered).real
+        x_rec = np.linspace(0, end - start, N)
+
+        Xf_list.append(freqs_pos)
+        Yf_list.append(Yf_pos)
+        X_list.append(x_rec)
+        Y_list.append(y_rec)
+
+        # print(f"✅ 處理 segment: {start:.2f} → {end:.2f} 秒, 長度：{end - start:.2f} 秒")
+
+    return Xf_list, Yf_list, X_list, Y_list
+
+def get_audio(wav):
+    if wav.ndim > 1:
+        sig = wav.mean(axis=1)  # 轉單聲道
+    time = len(sig) / sample_rate
+    return sig, time
 
 def plot_mel_stft_fft(wav, file_name, class_type='no-leak'):
 
@@ -147,14 +240,72 @@ def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type
     axs[1, 2].set_ylabel("Magnitude", fontsize=14)
     axs[1, 2].grid(True)
 
-    # 確保目錄存在
+    # ✅ 頻段參數
+    freq_ranges = [(50, 100), (100, 300), (300, 500), (500, 1000), (1000, 3000)]
+
+    # ✅ 分段參數
+    segment_table = generate_segments(wav, window=1.0)
+    xf, yf, x, y = FFT_filter(wav, segment_table, bandpass=None)
+
+    # ✅ 全段 bandpass 重建
+    time = len(wav) / sample_rate
+    N = len(wav)
+    t = np.linspace(0, time, N)
+    Yf = fft(wav) / sample_rate
+    freqs = np.fft.fftfreq(N, d=1 / sample_rate)
+
+    bandpassed_signals = []
+    for (low, high) in freq_ranges:
+        mask = (np.abs(freqs) >= low) & (np.abs(freqs) <= high)
+        Yf_masked = np.zeros_like(Yf, dtype=complex)
+        Yf_masked[mask] = Yf[mask]
+        y_filtered = ifft(Yf_masked).real
+        bandpassed_signals.append((f"{low}-{high}Hz", y_filtered))
+
+    # 🔄 新圖形整合（額外加一張大圖，不塞進原 fig）
+    fig2 = plt.figure(figsize=(16, 2 + len(x) * 2.5 + len(bandpassed_signals) * 2.5))
+    gs = gridspec.GridSpec(len(x) + len(bandpassed_signals) + 1, len(freq_ranges) + 1, figure=fig2)
+
+    # 🔹 多段頻譜圖
+    for i in range(len(x)):
+        seg_start, seg_end = segment_table[i]
+        for j, (f_start, f_end) in enumerate(freq_ranges):
+            ax = fig2.add_subplot(gs[i, j])
+            ax.plot(xf[i], yf[i])
+            ax.set_xlim(f_start, f_end)
+            ax.set_title(f"{seg_start:.1f}-{seg_end:.1f}s\n{f_start}-{f_end}Hz")
+        ax = fig2.add_subplot(gs[i, -1])
+        ax.plot(x[i], y[i], color='red')
+        ax.set_title(f"{seg_start:.1f}-{seg_end:.1f}s - IFFT")
+
+    # 🔹 原始音訊 + 各頻段還原
+    ax = fig2.add_subplot(gs[len(x), :])
+    ax.plot(t, wav, color="gray")
+    ax.set_title("Full Audio - Original Signal")
+
+    for i, (label, yfilt) in enumerate(bandpassed_signals):
+        ax = fig2.add_subplot(gs[len(x) + i + 1, :])
+        ax.plot(t, yfilt)
+        ax.set_title(f"Bandpassed: {label}")
+
+    # 儲存主圖（Mel + STFT + FFT + 表格 + 1D/3D）
     os.makedirs(f"images/{serial_number}_{class_type}", exist_ok=True)
-    plt.tight_layout()
-    plt.savefig(f"images/{serial_number}_{class_type}/{file_name}_mel_stft_fft_1d_3d.png")
+    main_fig_path = f"images/{serial_number}_{class_type}/{file_name}_mel_stft_fft_1d_3d.png"
+    fig.tight_layout()
+    fig.savefig(main_fig_path)  # ✅ 用 fig 儲存，而非 plt
     if dev:
         plt.show()
+    plt.close(fig)
+    # print(f"✅ 主圖儲存於：{main_fig_path}")
 
-    plt.close()
+    # 儲存副圖（Segment FFT + bandpassed）
+    bandpass_fig_path = f"images/{serial_number}_{class_type}/{file_name}_segment_bandpass.png"
+    fig2.tight_layout()
+    fig2.savefig(bandpass_fig_path)
+    if dev:
+        plt.show()
+    plt.close(fig2)
+    # print(f"✅ Bandpass 圖儲存於：{bandpass_fig_path}")
 
 def plot_training_history(history, model_name):
     fig, axs = plt.subplots(2)
