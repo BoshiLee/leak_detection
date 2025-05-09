@@ -23,10 +23,12 @@ mels_hop_length = int(os.getenv("MELS_HOP_LENGTH"))
 stft_n_fft = int(os.getenv("STFT_N_FFT"))
 stft_hop_length = int(os.getenv("STFT_HOP_LENGTH"))
 desired_time = float(os.getenv("DESIRED_TIME"))
-
+# ✅ 頻段參數
+freq_ranges = [(0, 1000), (1000, 3000)]
 print('n_mels:', n_mels)
 print('mels_n_fft:', mels_n_fft)
 print('mels_hop_length:', mels_hop_length)
+print(f'freq_ranges:', freq_ranges)
 
 # Windows 用 'Microsoft JhengHei'，Mac 用 'PingFang TC'，Linux 可試 'Noto Sans CJK TC'
 plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei']  # 適用於 Windows
@@ -240,8 +242,8 @@ def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type
     axs[1, 2].set_ylabel("Magnitude", fontsize=14)
     axs[1, 2].grid(True)
 
-    # ✅ 頻段參數
-    freq_ranges = [(50, 100), (100, 300), (300, 500), (500, 1000), (1000, 3000)]
+
+
 
     # ✅ 分段參數
     segment_table = generate_segments(wav, window=1.0)
@@ -299,7 +301,7 @@ def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type
     # print(f"✅ 主圖儲存於：{main_fig_path}")
 
     # 儲存副圖（Segment FFT + bandpassed）
-    bandpass_fig_path = f"images/{serial_number}_{class_type}/{file_name}_segment_bandpass.png"
+    bandpass_fig_path = f"images/{serial_number}_{class_type}/uid_{uid}_{file_name}_segment_bandpass.png"
     fig2.tight_layout()
     fig2.savefig(bandpass_fig_path)
     if dev:

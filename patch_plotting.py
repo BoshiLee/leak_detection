@@ -43,7 +43,7 @@ def main(date_range, serial_number):
             dip_noise=dip,
             pvc_pipe=pvc,
             tfc_noise=tfc,
-            file_name=f'{uid}_{wav_data}',
+            file_name=f'{wav_data}',
             dev=False
         )
 
