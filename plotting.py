@@ -12,6 +12,7 @@ from matplotlib import gridspec
 from scipy.fft import fft, ifft
 from scipy.io import wavfile
 from feature_extraction import extract_features, extract_stft_features, compute_fft
+from sklearn.decomposition import PCA
 
 load_dotenv()
 
@@ -309,6 +310,13 @@ def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type
     plt.close(fig2)
     # print(f"✅ Bandpass 圖儲存於：{bandpass_fig_path}")
 
+    analyze_pca_from_audio(y=wav, sr=sample_rate, duration=1,
+                           n_fft=n_fft,
+                           hop_length=stft_hop_length,
+                           n_components=3,
+                           n_mels=n_mels,
+                           output_path=f"images/{serial_number}_{class_type}/uid_{uid}_{file_name}_pca.png")
+
 def plot_training_history(history, model_name):
     fig, axs = plt.subplots(2)
 
@@ -328,3 +336,80 @@ def plot_training_history(history, model_name):
     plt.savefig(f'images/model_loss/{model_name}.png')
 
     plt.show()
+
+
+
+
+def analyze_pca_from_audio(
+    y: np.ndarray,
+    sr: int,
+    duration: float = 1.0,
+    n_fft: int = 2048,
+    hop_length: int = 256,
+    n_components: int = 3,
+    n_mels: int = 40,
+    output_path: str = None
+):
+    # 取前 duration 秒資料
+    sample_count = int(sr * duration)
+    y_segment = y[:sample_count]
+
+    # === STFT ===
+    S = np.abs(librosa.stft(y_segment, n_fft=n_fft, hop_length=hop_length))
+    S_db = librosa.amplitude_to_db(S, ref=np.max)
+    freqs = librosa.fft_frequencies(sr=sr, n_fft=n_fft)
+
+    # === STFT PCA ===
+    S_T = S_db.T
+    pca_stft = PCA(n_components=n_components)
+    S_pca_stft = pca_stft.fit_transform(S_T)
+    time_axis = np.arange(S_pca_stft.shape[0]) * hop_length / sr
+
+    # === Mel Spectrogram ===
+    S_mel = librosa.feature.melspectrogram(
+        y=y_segment, sr=sr, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels
+    )
+    S_mel_db = librosa.power_to_db(S_mel, ref=np.max)
+    mel_freqs = librosa.mel_frequencies(n_mels=n_mels)
+
+    # === Mel PCA ===
+    S_mel_T = S_mel_db.T
+    pca_mel = PCA(n_components=n_components)
+    S_pca_mel = pca_mel.fit_transform(S_mel_T)
+
+    # === Plotting ===
+    fig, axes = plt.subplots(n_components * 4, 1, figsize=(12, 4 * n_components * 2), sharex=False)
+    colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
+
+    for i in range(n_components):
+        color = colors[i % len(colors)]
+        axes[4 * i].plot(time_axis, S_pca_stft[:, i], label=f'STFT PC{i+1} (Time)', color=color, linestyle='-')
+        axes[4 * i].set_ylabel("Value")
+        axes[4 * i].set_title(f'STFT PCA - PC{i+1} - Time Domain')
+        axes[4 * i].legend()
+
+        axes[4 * i + 1].plot(freqs, pca_stft.components_[i], label=f'STFT PC{i+1} (Freq)', color=color)
+        axes[4 * i + 1].set_xlabel("Frequency (Hz)")
+        axes[4 * i + 1].set_ylabel("Weight")
+        axes[4 * i + 1].set_title(f'STFT PCA - PC{i+1} - Frequency Domain')
+        axes[4 * i + 1].legend()
+
+        axes[4 * i + 2].plot(time_axis, S_pca_mel[:, i], label=f'Mel PC{i+1} (Time)', color=color, linestyle='--')
+        axes[4 * i + 2].set_ylabel("Value")
+        axes[4 * i + 2].set_title(f'Mel PCA - PC{i+1} - Time Domain')
+        axes[4 * i + 2].legend()
+
+        axes[4 * i + 3].plot(mel_freqs, pca_mel.components_[i], label=f'Mel PC{i+1} (Mel Freq)', color=color, linestyle='--')
+        axes[4 * i + 3].set_xlabel("Frequency (Hz)")
+        axes[4 * i + 3].set_ylabel("Weight")
+        axes[4 * i + 3].set_title(f'Mel PCA - PC{i+1} - Frequency Domain')
+        axes[4 * i + 3].legend()
+
+    plt.tight_layout()
+
+    if output_path:
+        plt.savefig(output_path)
+        # print(f"📁 圖片已儲存至：{output_path}")
+    else:
+        plt.show()
+    plt.close(fig)
