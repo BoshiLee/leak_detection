@@ -237,7 +237,7 @@ def plot_mel_stft_fft_1d_3d(wav, file_name, one_d_path, three_d_path, class_type
 
     # **繪製 FFT 頻譜圖（移到 axs[1, 2]）**
     axs[1, 2].plot(frequencies, fft_magnitude)
-    axs[1, 2].set_xlim(0, 6600)
+    axs[1, 2].set_xlim(0, 1000)
     axs[1, 2].set_title(f"FFT of Audio Signal {file_name}", fontsize=16)
     axs[1, 2].set_xlabel("Frequency (Hz)", fontsize=14)
     axs[1, 2].set_ylabel("Magnitude", fontsize=14)
